@@ -4,6 +4,14 @@
 #include "Arduino.h"
 #include <Servo.h>
 
+struct min_max
+{
+	float minCtr;
+	float maxCtr;
+	float minServo;
+	float maxServo;
+};
+
 class Transmitter
 {
 public:
@@ -15,13 +23,11 @@ public:
 
 	void Initialize();
 
-	inline float GetAil() { return surfs[AILERON]; }
-	inline float GetElev() { return surfs[ELEVATOR]; }
-	inline float GetRud() { return surfs[RUDDER]; }
+	inline float GetCtr(int ctr) { return controls[ctr]; }
 
-	void SetAil(float ail_val);
-	void SetElev(float elev_val);
-	void SetRud(float rud_val);
+	void SetCtr(float inputCtr, int ctr);
+
+	float ServoInput(float inputCtr, int ctr);
 
 protected:
 
@@ -31,14 +37,17 @@ private:
 		AILERON,
 		ELEVATOR,
 		RUDDER,
-		SURFS
+		THROTTLE,
+		NUM_CONTROLS
 	};
 
-	int pins[SURFS];
-	float surfs[SURFS];
+	int pins[NUM_CONTROLS];
+	float controls[NUM_CONTROLS];
 	Servo *ailServo,
 		  *elevServo,
-		  *rudServo;
+		  *rudServo,
+		  *thrServo;
+	min_max bd[NUM_CONTROLS];
 };
 
 #endif

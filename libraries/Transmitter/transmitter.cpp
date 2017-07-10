@@ -2,8 +2,8 @@
 
 Transmitter::Transmitter(int *pins)
 {
-	for (int i = 0; i < SURFS; ++i){
-		surfs[i] = 0;
+	for (int i = 0; i < NUM_CONTROLS; ++i){
+		controls[i] = 0;
 		this->pins[i] = pins[i];
 	}
 }
@@ -17,40 +17,70 @@ void Transmitter::Initialize()
 	// AILERON
 	ailServo = new Servo;
 	ailServo->attach(pins[AILERON]);
-	SetAil(surfs[AILERON]);
+	bd[AILERON].minCtr = -15;
+  	bd[AILERON].maxCtr = 15;
+  	bd[AILERON].minServo = 50;
+  	bd[AILERON].maxServo = 130;
+	SetCtr(controls[AILERON], AILERON);
 
 	// ELEVATOR
 	elevServo = new Servo;
 	elevServo->attach(pins[ELEVATOR]);
-	SetElev(surfs[ELEVATOR]);
+	bd[ELEVATOR].minCtr = -15;
+  	bd[ELEVATOR].maxCtr = 15;
+  	bd[ELEVATOR].minServo = 20;
+  	bd[ELEVATOR].maxServo = 160;
+	SetCtr(controls[ELEVATOR], ELEVATOR);
 
 	// RUDDER
 	rudServo = new Servo;
 	rudServo->attach(pins[RUDDER]);
-	SetRud(surfs[RUDDER]);
+	bd[RUDDER].minCtr = -15;
+  	bd[RUDDER].maxCtr = 15;
+  	bd[RUDDER].minServo = 20;
+  	bd[RUDDER].maxServo = 160;
+	SetCtr(controls[RUDDER], RUDDER);
+
+  	// THROTTLE (dummy values)
+	thrServo = new Servo;
+	thrServo->attach(pins[THROTTLE]);
+	bd[THROTTLE].minCtr = -15;
+  	bd[THROTTLE].maxCtr = 15;
+  	bd[THROTTLE].minServo = 50;
+  	bd[THROTTLE].maxServo = 150;
+	SetCtr(controls[THROTTLE], THROTTLE);
 }
 
-void Transmitter::SetAil(float ail_val)
+void Transmitter::SetCtr(float inputCtr, int ctr)
 {
-	float ailIN;
-	ailIN = 8./3.*(ail_val + 15.) + 50.;
-	ailServo->write(ailIN);
-	surfs[AILERON] = ail_val;
+	float inputServo = ServoInput(inputCtr, ctr);
+
+	switch(ctr){
+		case AILERON:
+			ailServo->write(inputServo);
+			controls[AILERON] = inputCtr;
+			break;
+		case ELEVATOR:
+			elevServo->write(inputServo);
+			controls[ELEVATOR] = inputCtr;
+			break;
+		case RUDDER:
+			rudServo->write(inputServo);
+			controls[RUDDER] = inputCtr;
+			break;
+		case THROTTLE:
+			thrServo->write(inputServo);
+			controls[THROTTLE] = inputCtr;
+			break;
+		default:
+			break;
+	}
 }
 
-void Transmitter::SetElev(float elev_val)
+float Transmitter::ServoInput(float inputCtr, int ctr)
 {
-	float elevIN;
-	elevIN = 14./3.*(elev_val + 15.) + 20.;
-	elevServo->write(elevIN);
-	surfs[ELEVATOR] = elev_val;
-}
+  float Q = abs(bd[ctr].maxCtr-bd[ctr].minCtr)/abs(bd[ctr].maxServo-bd[ctr].minServo);
 
-void Transmitter::SetRud(float rud_val)
-{
-	float rudIN;
-	rudIN = 14./3. * (rud_val+15.) + 20.;
-	rudServo->write(rudIN);
-	surfs[RUDDER] = rud_val;
+  return abs(inputCtr-bd[ctr].minCtr)/Q + bd[ctr].minServo;
 }
 
