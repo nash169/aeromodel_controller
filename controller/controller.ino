@@ -1,25 +1,32 @@
 #include <EnableInterrupt.h>
-#include "radio_decoder.h"
+#include "libs/radio_decoder.h"
 
-#include "MPU6050_6Axis_MotionApps20.h"
+#include <MPU6050_6Axis_MotionApps20.h>
 #if I2CDEV_IMPLEMENTATION == I2CDEV_ARDUINO_WIRE
     #include "Wire.h"
 #endif
 
-#include "transmitter.h"
+#include "libs/transmitter.h"
 
-// DEFINES
-#define SERIAL_PORT_SPEED 57600
+#define SERIAL_PORT_SPEED 115200
+#define OUTPUT_TEAPOT
 
-#define RC_CH1  0
-#define RC_CH2  1
-#define RC_CH3  2
-#define RC_CH4  3
+#define RC_CH1_INPUT  A0 // -> Ch. 1 -> RightSide-RightLeft
+#define RC_CH2_INPUT  A1 // -> Ch. 2 -> RightSide-UpDown
+#define RC_CH3_INPUT  A2 // -> Ch. 3 -> LeftSide-UpDown
+#define RC_CH4_INPUT  A3 // -> Ch. 4 -> LeftSide-RightLeft
 
-#define RC_CH1_INPUT  A0
-#define RC_CH2_INPUT  A1
-#define RC_CH3_INPUT  A2
-#define RC_CH4_INPUT  A3
+enum{
+  AILERON,
+  ELEVATOR,
+  THROTTLE,
+  RUDDER
+};
+
+#define AIL_PIN   9
+#define ELEV_PIN  6
+#define RUD_PIN   10
+#define THR_PIN   11
 
 #define LED_PIN 13 // (Arduino is 13, Teensy is 11, Teensy++ is 6)
 
@@ -44,10 +51,18 @@ float euler[3];         // [psi, theta, phi]    Euler angle container
 float ypr[3];           // [yaw, pitch, roll]   yaw/pitch/roll container and gravity vector
 float ypr_deg[3];
 
+uint8_t teapotPacket[14] = { '$', 0x02, 0,0, 0,0, 0,0, 0,0, 0x00, 0x00, '\r', '\n' };
+
+/*
+u_1 -> Aileron
+u_2 -> Elevator
+u_3 -> Rudder
+u_4 -> Throttle
+*/
 float u_p[4], u[4];
 
 // OBJECTS
-int pins[4] = {9, 11, 10, 6};
+int pins[4] = {AIL_PIN, ELEV_PIN, RUD_PIN, THR_PIN};
 Transmitter myPilot(pins);
 
 RadioDecoder radio;
@@ -55,10 +70,10 @@ RadioDecoder radio;
 MPU6050 mpu;
 
 // FUNCTIONS
-void calc_ch1() { radio.calc_input(RC_CH1, RC_CH1_INPUT); }
-void calc_ch2() { radio.calc_input(RC_CH2, RC_CH2_INPUT); }
-void calc_ch3() { radio.calc_input(RC_CH3, RC_CH3_INPUT); }
-void calc_ch4() { radio.calc_input(RC_CH4, RC_CH4_INPUT); }
+void calc_ch1() { radio.calc_input(AILERON, RC_CH1_INPUT); }
+void calc_ch2() { radio.calc_input(ELEVATOR, RC_CH2_INPUT); }
+void calc_ch3() { radio.calc_input(THROTTLE, RC_CH3_INPUT); }
+void calc_ch4() { radio.calc_input(RUDDER, RC_CH4_INPUT); }
 
 // ================================================================
 // ===               INTERRUPT DETECTION ROUTINE                ===
@@ -138,9 +153,10 @@ void setup() {
 void loop() {
   /*----RADIO RECEIVER----*/
   radio.rc_read_values();
-
-  for(int i=0; i<4; i++)
-      u_p[i] = radio.CtrInput(radio.GetChannel(i), i);
+  u_p[0] = radio.CtrInput(radio.GetChannel(AILERON), AILERON);
+  u_p[1] = radio.CtrInput(radio.GetChannel(ELEVATOR), ELEVATOR);
+  u_p[2] = radio.CtrInput(radio.GetChannel(RUDDER), RUDDER);
+  u_p[3] = radio.CtrInput(radio.GetChannel(THROTTLE), THROTTLE);
 
   /*----IMU SENSOR----*/
   // if programming failed, don't try to do anything
@@ -174,10 +190,13 @@ void loop() {
     mpu.dmpGetQuaternion(&q, fifoBuffer);
     mpu.dmpGetGravity(&gravity, &q);
     mpu.dmpGetYawPitchRoll(ypr, &q, &gravity);
-    for(int i=0; i<3; i++){
+    for(int i=0; i<3; i++)
       ypr_deg[i] = ypr[i] * 180/M_PI;
-      u[i] = -0.1*ypr_deg[i];
-    }
+
+    u[0] = -0.5*ypr_deg[1];
+    u[1] = -0.5*ypr_deg[2];
+    u[2] = -0.5*ypr_deg[0];
+    u[3] = 0.0;
 
     // blink LED to indicate activity
     blinkState = !blinkState;
@@ -187,6 +206,20 @@ void loop() {
   /*----CONTROL SERVO----*/
   for(int i=0; i<4; i++)
       myPilot.SetCtr(u_p[i] + u[i], i);
+
+  #ifdef OUTPUT_TEAPOT
+    // display quaternion values in InvenSense Teapot demo format:
+    teapotPacket[2] = fifoBuffer[0];
+    teapotPacket[3] = fifoBuffer[1];
+    teapotPacket[4] = fifoBuffer[4];
+    teapotPacket[5] = fifoBuffer[5];
+    teapotPacket[6] = fifoBuffer[8];
+    teapotPacket[7] = fifoBuffer[9];
+    teapotPacket[8] = fifoBuffer[12];
+    teapotPacket[9] = fifoBuffer[13];
+    Serial.write(teapotPacket, 14);
+    teapotPacket[11]++; // packetCount, loops at 0xFF on purpose
+  #endif
 }
 
 
