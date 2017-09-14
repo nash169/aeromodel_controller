@@ -10,10 +10,10 @@
 #define RC_CH3  2
 #define RC_CH4  3
 
-#define RC_CH1_INPUT  A0 // AILERON
-#define RC_CH2_INPUT  A1 // ELEVATOR
-#define RC_CH3_INPUT  A2 // RUDDER
-#define RC_CH4_INPUT  A3 // THROTTL
+#define RC_CH1_INPUT  A0
+#define RC_CH2_INPUT  A1
+#define RC_CH3_INPUT  A2
+#define RC_CH4_INPUT  A3
 
 struct max_min
 {
