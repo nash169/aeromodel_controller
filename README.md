@@ -1,5 +1,5 @@
 # aeromodel_controller
-This is classes/libraries for SAS and Fly by Wire controller via Arduino of a model airplane
+SAS and Fly by Wire controller via Arduino for a model airplane
 
 # External libraries required
 MPU6050 		-> http://diyhacking.com/projects/MPU6050.zip
