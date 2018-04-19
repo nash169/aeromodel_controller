@@ -1,0 +1,12 @@
+[submodule "arduAero/lib/IMUSensor"]
+	path = arduAero/lib/IMUSensor
+	url = https://github.com/nash169/IMUSensor.git
+[submodule "arduAero/lib/RadioDecoder"]
+	path = arduAero/lib/RadioDecoder
+	url = https://github.com/nash169/RadioDecoder.git
+[submodule "arduAero/lib/MotorControl"]
+	path = arduAero/lib/MotorControl
+	url = https://github.com/nash169/MotorControl.git
+[submodule "arduAero/lib/MPU6050"]
+	path = arduAero/lib/MPU6050
+	url = https://github.com/nash169/MPU6050.git

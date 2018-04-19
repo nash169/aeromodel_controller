@@ -1,3 +1,5 @@
+#include <Arduino.h>
+
 #include <EnableInterrupt.h>
 #include "libs/radio_decoder.h"
 
@@ -221,5 +223,3 @@ void loop() {
     teapotPacket[11]++; // packetCount, loops at 0xFF on purpose
   #endif
 }
-
-
